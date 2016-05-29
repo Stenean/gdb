@@ -1287,7 +1287,9 @@ class Expressions(Dashboard.Module):
 class StackMemory(Registers):
     """Allow to inspect stack memory regions."""
 
-    MEM_RANGE = 16  # * sizeof(void *)
+    @classmethod
+    def trim(cls, text, width):
+        return text[:width]
 
     @staticmethod
     def format_byte(byte):
@@ -1329,19 +1331,12 @@ class StackMemory(Registers):
         """
         Recursively dereference a pointer for display
         """
-        # fmt = ('<' if self.byte_order == 'little' else '>'
-        #        ) + {2: 'H', 4: 'L', 8: 'Q'}[self.row_length]
-
         addr = pointer
         chain = []
 
-        # recursively dereference
         while True:
             try:
-                # mem = gdb.selected_inferior().read_memory(addr, self.row_length)
                 mem = gdb.execute('x/a {}'.format(addr), to_string=True)
-                # log.debug("read mem: {}".format(mem))
-                # (ptr,) = struct.unpack(fmt, mem)
                 prev_addr, mem = (mem.split(':')[0], ' '.join(mem.split(':')[1:]))
                 if prev_addr != addr:
                     chain.append(('string', addr))
@@ -1355,9 +1350,6 @@ class StackMemory(Registers):
             except gdb.MemoryError:
                 break
 
-        print(chain)
-        # get some info for the last pointer
-        # first try to resolve a symbol context for the address
         if len(chain):
             p, addr = chain[-1]
             try:
@@ -1467,7 +1459,7 @@ class StackMemory(Registers):
             reg = registers[i] if len(registers) > i else ''
             whitespace = ' ' * (self.width - len(self.control_remove.sub('', line)))
             divider = ansi('|', R.divider_fill_style_primary)
-            line = line[:self.width] + whitespace + divider + reg
+            line = self.trim(line, self.width) + whitespace + divider + reg
             out.append(line)
         return out
 
