@@ -1,3 +1,6 @@
+# GDB dashboard - Modular visual interface for GDB in Python.
+#
+# https://github.com/cyrus-and/gdb-dashboard
 # This file contains the generic settings
 
 set prompt gdb> 
