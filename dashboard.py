@@ -8,7 +8,7 @@ import os
 import re
 import struct
 import termios
-import re
+import traceback
 
 # Common attributes ------------------------------------------------------------
 
@@ -1287,6 +1287,9 @@ class Expressions(Dashboard.Module):
 class StackMemory(Registers):
     """Allow to inspect stack memory regions."""
 
+    MEM_RANGE = 16
+    MAX_STRING = 128
+
     @classmethod
     def trim(cls, text, width):
         return text[:width]
@@ -1341,11 +1344,14 @@ class StackMemory(Registers):
                 if prev_addr != addr:
                     chain.append(('string', addr))
                     break
-                if len(mem.strip()) - 2 != self.row_length * 2:
+                if len(mem.strip()[2:]) > self.row_length * 2:
                     chain.append(('string', mem.strip()))
                     break
+                if prev_addr in [x[1] for x in chain]:
+                    break
                 ptr = mem.strip()
-                chain.append(('pointer', addr))
+                if addr != pointer:
+                    chain.append(('pointer', addr))
                 addr = ptr
             except gdb.MemoryError:
                 break
@@ -1358,6 +1364,19 @@ class StackMemory(Registers):
                 output = 'No symbol matches'
             if 'No symbol matches' not in output:
                 chain.append(('symbol', output.strip()))
+            elif len(addr.strip()[2:]) <= self.row_length * 2:
+                mem = gdb.selected_inferior().read_memory(int(addr, base=16), 2)
+                if ord(mem[0]) <= 127 and ord(mem[0]) != 0:
+                    a = []
+                    for i in range(0, self.MAX_STRING):
+                        mem = gdb.selected_inferior().read_memory(int(addr, base=16) + i, 1)
+                        if ord(mem[0]) == 0 or ord(mem[0]) > 127:
+                            break
+                        if isinstance(mem, memoryview):
+                            a.append(mem.tobytes().decode('latin1'))
+                        else:
+                            a.append(str(mem))
+                    chain.append(('string','"{}"'.format(''.join(a).strip())))
 
         return chain
 
@@ -1400,7 +1419,7 @@ class StackMemory(Registers):
             memory = inferior.read_memory(address, self.length)
             return self.format_memory(address, memory)
         except gdb.error as e:
-            print('{}: {}'.format(e, e.with_traceback()))
+            print('{}'.format(traceback.format_exc()))
             msg = 'Cannot access {} bytes starting at {}'
             msg = msg.format(self.length, format_address(address))
             return [ansi(msg, R.style_error)]
@@ -1431,14 +1450,7 @@ class StackMemory(Registers):
         per_line = 1
         # redistribute extra space among columns
         width = Dashboard.term_width - self.width
-        extra = int((width + 1 -
-                     max_width * per_line) / per_line)
-        if per_line == 1:
-            # center when there is only one column
-            max_name += int(extra / 2)
-            max_value += int(extra / 2)
-        else:
-            max_value += extra
+        extra = int((width + 1 - max_width * per_line) / per_line)
         # format registers info
         partial = []
         for name, value, changed in registers:
@@ -1446,6 +1458,16 @@ class StackMemory(Registers):
             value_style = R.style_selected_1 if changed else ''
             styled_value = ansi(value.ljust(max_value), value_style)
             partial.append(styled_name + ' ' + styled_value)
+            try:
+                deref = self.dereference(value)[-1:]
+            except gdb.error:
+                deref = []
+            if deref:
+                print(deref)
+                deref = ' => ' + deref[0][1]
+                if len(deref) > extra:
+                    deref = deref[:extra]
+                partial.append('\x1b[0m' + deref)
         out = []
         for i in range(0, len(partial), per_line):
             out.append(' '.join(partial[i:i + per_line]).rstrip())
@@ -1458,7 +1480,7 @@ class StackMemory(Registers):
             line = lines[i] if len(lines) > i else ''
             reg = registers[i] if len(registers) > i else ''
             whitespace = ' ' * (self.width - len(self.control_remove.sub('', line)))
-            divider = ansi('|', R.divider_fill_style_primary)
+            divider = '\x1b[0m' + ansi('|', R.divider_fill_style_primary)
             line = self.trim(line, self.width) + whitespace + divider + reg
             out.append(line)
         return out

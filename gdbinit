@@ -8,10 +8,33 @@ set prompt gdb>
 # Stop printing arrays at a nul
 set print null-stop
 
+# setup signal handling
+handle SIGALRM nostop print nopass
+handle SIGBUS  stop   print nopass
+handle SIGPIPE nostop print nopass
+handle SIGSEGV stop   print nopass
+
 # Pretty Print things
 set print pretty on
 set print array on
 
+python
+from __future__ import print_function
+
+import os
+import sys
+
+try:
+    import voltron
+    voltron_path = os.path.sep.join(voltron.__file__.split(os.path.sep)[:-1] + ["entry.py"])
+    gdb.execute('source ' + voltron_path)
+except Exception as e:
+    print(e)
+    print(sys.version)
+    print(sys.path)
+end
+
+voltron init
 set disassembly-flavor intel
 
 # When inspecting large portions of code the scrollbar works better than 'less'
@@ -23,7 +46,7 @@ set history filename ~/.gdb_history
 set history size 32768
 set history expansion on
 
-source ~/.gdb.dashboard.py
+# source ~/.gdb.dashboard.py
 
 # Better GDB defaults ----------------------------------------------------------
 
@@ -37,7 +60,7 @@ set python print-stack full
 
 # Start ------------------------------------------------------------------------
 
-python Dashboard.start()
+# python Dashboard.start()
 
 # ------------------------------------------------------------------------------
 # Copyright (c) 2015-2016 Andrea Cardaci <cyrus.and@gmail.com>
