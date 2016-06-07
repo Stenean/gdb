@@ -18,6 +18,9 @@ handle SIGSEGV stop   print nopass
 set print pretty on
 set print array on
 
+# allow setting of breakpoints in shared lib
+set breakpoint pending on
+
 python
 from __future__ import print_function
 
@@ -35,7 +38,7 @@ except Exception as e:
 end
 
 voltron init
-set disassembly-flavor intel
+# # set disassembly-flavor intel
 
 # When inspecting large portions of code the scrollbar works better than 'less'
 set pagination off
@@ -87,3 +90,4 @@ set python print-stack full
 # Local Variables:
 # mode: python
 # End:
+source /home/kuba/Projekty/pwndbg/gdbinit.py
