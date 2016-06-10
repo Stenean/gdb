@@ -38,7 +38,6 @@ except Exception as e:
 end
 
 voltron init
-# # set disassembly-flavor intel
 
 # When inspecting large portions of code the scrollbar works better than 'less'
 set pagination off
@@ -91,3 +90,4 @@ set python print-stack full
 # mode: python
 # End:
 source /home/kuba/Projekty/pwndbg/gdbinit.py
+set disassembly-flavor att
