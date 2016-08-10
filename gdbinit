@@ -28,6 +28,14 @@ import os
 import sys
 
 try:
+    additional_site_packages = os.path.join("/home", os.getenv("USER"), ".pyenv/versions/3.4.3/lib/python3.4/site-packages")
+    additional = [os.path.join(additional_site_packages, x) for x in os.listdir(additional_site_packages) if x[-3:] == 'egg']
+
+    for i in additional:
+        sys.path.insert(0, i)
+
+    sys.path.insert(len(additional) + 1, additional_site_packages)
+
     import voltron
     voltron_path = os.path.sep.join(voltron.__file__.split(os.path.sep)[:-1] + ["entry.py"])
     gdb.execute('source ' + voltron_path)
