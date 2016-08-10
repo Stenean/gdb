@@ -27,18 +27,24 @@ from __future__ import print_function
 import os
 import sys
 
+home = os.path.join("/home", os.getenv("USER"))
+additional_site_packages = os.path.join(home, ".pyenv/versions/3.4.3/lib/python3.4/site-packages")
+additional = [os.path.join(additional_site_packages, x) for x in os.listdir(additional_site_packages) if x[-3:] == 'egg']
+
+for i in additional:
+    sys.path.insert(0, i)
+
+sys.path.insert(len(additional) + 1, additional_site_packages)
+
 try:
-    additional_site_packages = os.path.join("/home", os.getenv("USER"), ".pyenv/versions/3.4.3/lib/python3.4/site-packages")
-    additional = [os.path.join(additional_site_packages, x) for x in os.listdir(additional_site_packages) if x[-3:] == 'egg']
-
-    for i in additional:
-        sys.path.insert(0, i)
-
-    sys.path.insert(len(additional) + 1, additional_site_packages)
-
     import voltron
     voltron_path = os.path.sep.join(voltron.__file__.split(os.path.sep)[:-1] + ["entry.py"])
     gdb.execute('source ' + voltron_path)
+
+    for i in ["Projekty", "Projects"]:
+        if os.path.exists(os.path.join(home, i)):
+            pwndbg = os.path.join(home, i, "pwndbg/gdbinit.py")
+    gdb.execute('source ' + pwndbg)
 except Exception as e:
     print(e)
     print(sys.version)
@@ -97,5 +103,4 @@ set python print-stack full
 # Local Variables:
 # mode: python
 # End:
-source /home/kuba/Projekty/pwndbg/gdbinit.py
 set disassembly-flavor att
