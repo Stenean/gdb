@@ -103,4 +103,4 @@ set python print-stack full
 # Local Variables:
 # mode: python
 # End:
-set disassembly-flavor att
+set disassembly-flavor intel
